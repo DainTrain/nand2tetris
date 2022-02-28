@@ -43,4 +43,33 @@ CHIP ALU {
 
     PARTS:
    // Put you code here:
+   
+   // zero the x input?
+   Mux16(a=x, b[0..15]=false, sel=zx, out=x0);
+   // negate the x input?
+   Not16(in=x0, out=negx);
+   Mux16(a=x0, b=negx, sel=nx, out=x1);
+
+   // zero the y input?
+   Mux16(a=y, b[0..15]=false, sel=zy, out=y0);
+   // negate the y input?
+   Not16(in=y0, out=negy);
+   Mux16(a=y0, b=negy, sel=ny, out=y1);
+
+   // compute both x+y and x&y, then select based on f
+   Add16(a=x1, b=y1, out=xplusy);
+   And16(a=x1, b=y1, out=xandy);
+   Mux16(a=xandy, b=xplusy, sel=f, out=funcval);
+
+   // negate output?
+   Not16(in=funcval, out=negfuncval);
+   // pipe most significant output bit into ng
+   Mux16(a=funcval, b=negfuncval, sel=no, out[15]=ng, out[0..7]=out0, out[8..15]=out1,  out=out);
+
+   // out ?= 0
+   Or8Way(in=out0, out=or1);
+   Or8Way(in=out1, out=or2);
+   Or(a=or1, b=or2, out=negzr);
+   Not(in=negzr, out=zr);
+
 }
