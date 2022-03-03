@@ -17,4 +17,29 @@ CHIP PC {
 
     PARTS:
     // Put your code here:
+
+    // Negate reset for first function clause
+    Not(in=reset, out=negreset);
+
+    // Determine if second clause will be taken: not reset and load
+    And(a=negreset, b=load, out=c2);
+
+    // Select either previous PC output or 0 based on reset bit
+    Mux16(a=out0, b=false, sel=reset, out=out1);
+
+    // Select either value from above Mux or input value if we are loading
+    Mux16(a=out1, b=in, sel=c2, out=out2);
+
+    // Increment previous PC output in case we are incrementing
+    Inc16(in=out0, out=out3);
+    // Use absence of reset and load bits to determine if we are following third function clause
+    Or(a=reset, b=load, out=c3);
+    
+    // Function clause 4 will be determined by absence of load, inc, and reset (i.e. assert load bit in Register if any of the three are true)
+    Or(a=c3, b=inc, out=c4);
+
+    Mux16(a=out3, b=out2, sel=c3, out=out4);
+
+    // out4 will be correct based on input load/inc/reset
+    Register(in=out4, load=c4, out=out0, out=out); 
 }
