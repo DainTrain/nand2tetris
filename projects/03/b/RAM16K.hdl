@@ -16,4 +16,16 @@ CHIP RAM16K {
 
     PARTS:
     // Put your code here:
+    
+    // Use most significant address bits to determine which register receives live load bit
+    // RAM16K is composed of 4 RAM4K's so only 4lg2 = 2 address bits are needed to select the live RAM4K
+    DMux4Way(in=load, sel=address[12..13], a=a, b=b, c=c, d=d);
+    
+    RAM4K(in=in, load=a, address=address[0..2], out=outa);
+    RAM4K(in=in, load=b, address=address[0..2], out=outb);
+    RAM4K(in=in, load=c, address=address[0..2], out=outc);
+    RAM4K(in=in, load=d, address=address[0..2], out=outd);
+    
+    // Output value based on most significant address bits
+    Mux4Way16(a=outa, b=outb, c=outc, d=outd, sel=address[12..13], out=out);
 }
