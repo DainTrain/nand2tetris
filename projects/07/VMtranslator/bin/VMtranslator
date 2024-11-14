@@ -1,0 +1,2 @@
+java -jar /home/daintrain/src/nand2tetris/projects/07/VMtranslator/app/build/libs/app.jar $1
+
