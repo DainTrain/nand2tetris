@@ -20,4 +20,13 @@ CHIP Computer {
 
     PARTS:
     // Put your code here:
+
+    // Fetch the next instruction
+    ROM32K(address=ROMinput, out=nextInstruction);
+
+    // execute the instruction
+    CPU(inM=RAMout, instruction=nextInstruction, reset=reset, outM=RAMinput, writeM=RAMwrite, addressM=RAMaddress, pc=ROMinput);
+
+    // write to RAM
+    Memory(in=RAMinput, load=RAMwrite, address=RAMaddress, out=RAMout);
 }

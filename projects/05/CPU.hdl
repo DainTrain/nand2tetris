@@ -40,4 +40,61 @@ CHIP CPU {
 
     PARTS:
     // Put your code here:
+    
+    // C instructions are set using instruction[15]=1
+    // However it can be useful to have a positive bit when the instruction is an A instruction
+    Not(in=instruction[15], out=isAInstruction);
+
+    // The input to the A register is either ALU output, or the instruction, depending on whether we are executing A or C instruction
+    Mux16(a=instruction, b=ALUoutput, sel=instruction[15], out=ARegInput); 
+    
+    // A register is written to if instruction is an A instruction or if the A bit of the dest field is set
+    Or(a=isAInstruction, b=instruction[5], out=ALoad);
+
+    ARegister(in=ARegInput, load=ALoad, out=ARegOutput, out[0..14]=addressM);
+
+    // The ALU gets an "address operand" which is either direct (A) or indirect (M[A]), depending on instruction[12]
+    Mux16(a=ARegOutput, b=inM, sel=instruction[12], out=addressOperand);
+
+    // Prepare ALU function bits but only if it is a C instruction
+    And(a=instruction[11], b=instruction[15], out=zx); //c1
+    And(a=instruction[10], b=instruction[15], out=nx); //c2
+    Or(a=instruction[9], b=isAInstruction, out=zy); //c3
+    Or(a=instruction[8], b=isAInstruction, out=ny); //c4
+    And(a=instruction[7], b=instruction[15], out=f); //c5
+    And(a=instruction[6], b=instruction[15], out=no); //c6
+
+    // ALU takes in D Register and "address operand" as inputs, along with op code from instruction[6..11]
+    ALU(x=DRegOutput, y=addressOperand, zx=zx, nx=nx, zy=zy, ny=ny, f=f, no=no, out=ALUoutput, out=outM, zr=ALUoutputZero, ng=ALUoutputNegative);
+
+    // set writeM based on if it's both a C instruction and the M bit of the dest field is asserted
+    And(a=instruction[15], b=instruction[3], out=writeM);
+
+    // Set write to D register based on if it's both a C instruction and the D bit of the dest field is asserted
+    And(a=instruction[15], b=instruction[4], out=DLoad);
+
+    DRegister(in=ALUoutput, load=DLoad, out=DRegOutput);
+
+    // Finally, determine next PC value, or in other words the address of the next instruction, based on the ALU output in conjunction with the jump field bits of the instruction
+
+
+    // It is useful to first determine if ALU output is positive
+    Or(a=ALUoutputNegative, b=ALUoutputZero, out=ALUoutputZeroOrNegative);
+    Not(in=ALUoutputZeroOrNegative, out=ALUoutputPositive); 
+
+    // jump if (ALU output is negative AND instruction[2]=1) OR (ALU output is zero AND instruction[1]=1) OR (ALU output is positive AND instruction[0]=1)
+    // in other words, if a jump bit says we should jump, and the corresponding ALU output bit is asserted, we jump. We don't "care" which condition we jump on, just whether we jump
+    And(a=ALUoutputNegative, b=instruction[2], out=JLT);
+    And(a=ALUoutputZero, b=instruction[1], out=JEQ);
+    And(a=ALUoutputPositive, b=instruction[0], out=JGT);
+
+    // Use Or to see if any jump condition was met
+    Or(a=JLT, b=JEQ, out=j1);
+    Or(a=j1, b=JGT, out=j2);
+
+    // But we  only jump if a jump condition (j2) was met AND it's a C instruction
+    And(a=j2, b=instruction[15], out=doJump);
+
+    // we can cleverly always assert inc=true because load and reset are checked first and sort of supersede inc
+    PC(in=ARegOutput, load=doJump, inc=true, reset=reset, out[0..14]=pc); 
 }
