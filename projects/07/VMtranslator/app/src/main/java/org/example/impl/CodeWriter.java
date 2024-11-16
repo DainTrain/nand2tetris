@@ -91,8 +91,8 @@ public class CodeWriter implements ICodeWriter {
                 break;
             case "pointer":
                 if (command == CommandType.C_POP) {
-                    writeDecrementSP();
-                    write("A=M");
+                    write("@SP");
+                    write("AM=M-1");
                     write("D=M");
                     write(index == 0 ? "@THIS" : "@THAT");
                     write("M=D");
@@ -174,15 +174,19 @@ public class CodeWriter implements ICodeWriter {
      * local, argument, this, that
      */
     public void writeIndexedPop(String segment, int index) throws IOException {
+        // calculate indexed addr into R13
         write("@" + index);
         write("D=A");
         write("@" + segmentToSymbolMap.get(segment));
         write("D=D+M");
         write("@R13");
         write("M=D");
-        writeDecrementSP();
-        write("A=M");
+
+        write("@SP");
+        write("AM=M-1");
         write("D=M");
+
+        // retrieve target addr and write D to it
         write("@R13");
         write("A=M");
         write("M=D");
