@@ -18,6 +18,7 @@ M=M-1
 A=M
 D=M
 @R13
+A=M
 M=D
 // push constant 21
 @21
@@ -47,6 +48,7 @@ M=M-1
 A=M
 D=M
 @R13
+A=M
 M=D
 // pop argument 1
 @1
@@ -60,6 +62,7 @@ M=M-1
 A=M
 D=M
 @R13
+A=M
 M=D
 // push constant 36
 @36
@@ -81,6 +84,7 @@ M=M-1
 A=M
 D=M
 @R13
+A=M
 M=D
 // push constant 42
 @42
@@ -110,6 +114,7 @@ M=M-1
 A=M
 D=M
 @R13
+A=M
 M=D
 // pop that 2
 @2
@@ -123,6 +128,7 @@ M=M-1
 A=M
 D=M
 @R13
+A=M
 M=D
 // push constant 510
 @510
