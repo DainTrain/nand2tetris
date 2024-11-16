@@ -10,6 +10,7 @@ import java.util.HashMap;
 public class CodeWriter implements ICodeWriter {
     private String fileName;
     private BufferedWriter bWriter = null;
+    int jumpFlag = 0;
     private Map<String,String> segmentToSymbolMap = new HashMap<String, String>(){{
         put("local", "LCL"); put("argument", "ARG"); put("this", "THIS"); put("that", "THAT");}};
 
@@ -18,13 +19,19 @@ public class CodeWriter implements ICodeWriter {
     }
 
     public void setFileName(String fileName) throws IOException {
-        System.out.println("filename: " + fileName);
         FileWriter fstream = new FileWriter(fileName + ".asm");
         bWriter = new BufferedWriter(fstream);
     }
 
     private void write(String asmCommand) throws IOException {
-        bWriter.write(asmCommand + "\n");
+        write(asmCommand, true);
+    }
+
+    private void write(String asmCommand, boolean appendNewline) throws IOException {
+        bWriter.write(asmCommand);
+        if (appendNewline) {
+            bWriter.write("\n");
+        }
     }
 
     /**
@@ -40,27 +47,33 @@ public class CodeWriter implements ICodeWriter {
         * we will decrement SP to store y, decrement again to operate on x,
         * write the result, and then increment SP to point to the next available addr.
         */
-        if (command == "neg" || command == "not") {
-            write("@SP");
-            write("A=M-1");
-            write("M=" + (command == "neg" ? "-" : "!") + "M");
-        }
+       if (command.equals("neg")) {
+        writeUnaryArithmeticTemplate("M=-M");
+       } else if (command.equals("not")) {
+        writeUnaryArithmeticTemplate("M=!M");
+       } else if (command.equals("add")) {
+        writeSimpleArithmeticTemplate("M=M+D");
+       } else if (command.equals("sub")) {
+        writeSimpleArithmeticTemplate("M=M-D");
+       } else if (command.equals("and")) {
+        writeSimpleArithmeticTemplate("M=M&D");
+       } else if (command.equals("or")) {
+        writeSimpleArithmeticTemplate("M=M|D");
+       } else if (command.equals("eq")) {
+        writeBranchArithmeticTemplate("D;JEQ");
+       } else if (command.equals("gt")) {
+        writeBranchArithmeticTemplate("D;JGT");
+       } else if (command.equals("lt")) {
+        writeBranchArithmeticTemplate("D;JLT");
+       } else {
+        write("// unrecognized command:" + command);
+       }
+    }
 
-        switch (command) {
-            case "add":
-            case "sub":
-            case "and":
-            case "or":
-                writeSimpleTemplate(command);
-                break;
-            case "eq":
-            case "gt":
-            case "lt":
-                writeBranchTemplate(command);
-                break;
-            default:
-                break;
-        }
+    public void writeUnaryArithmeticTemplate(String asmOp) throws IOException {
+        write("@SP");
+        write("A=M-1");
+        write(asmOp);
     }
 
     public void writePushPop(CommandType command, String segment, int index) throws IOException {
@@ -171,6 +184,7 @@ public class CodeWriter implements ICodeWriter {
         write("A=M");
         write("D=M");
         write("@R13");
+        write("A=M");
         write("M=D");
     }
 
@@ -188,68 +202,33 @@ public class CodeWriter implements ICodeWriter {
         write("M=M+1");
     }
 
-    public void writeSimpleTemplate(String command) throws IOException {
-        // decrement to point SP at y arg
-        writeDecrementSP();
-        write("A=M");
-        write("D=M"); // D=y
-        writeDecrementSP();
-        write("A=M"); // after this operation, M[A]=x
-
-        switch (command) {
-            case "add":
-                write("M=D+M");
-                break;
-            case "sub":
-                write("M=M-D");
-                break;
-            case "and":
-                write("M=D&M");
-                break;
-            case "or":
-                write("M=D|M");
-                break;
-            case "eq":
-                write("M=");
-        }
-        writeIncrementSP();
+    public void writeSimpleArithmeticTemplate(String asmOp) throws IOException {
+        write("@SP");
+        write("AM=M-1"); //A=M-1 is to addr the y argument, M=M-1 is to decrement stack pointer
+        write("D=M"); //D=y
+        write("@SP");
+        write("A=M-1");
+        write(asmOp);
     }
 
-    public void writeBranchTemplate(String command) throws IOException {
-        // R13 = y
-        writeDecrementSP();
-        write("A=M");
-        write("D=M");
+    public void writeBranchArithmeticTemplate(String asmOp) throws IOException {
+        write("@SP");
+        write("AM=M-1");
+        write("D-M");
+        write("@SP");
+        write("A=M-1");
+        write("D=M-D");
         write("@R13");
-        write("M=D");
-        // D = x
-        writeDecrementSP();
-        write("A=M");
-        write("D=M");
-        // D = x - y
-        write("@R13");
-        write("D=D-M");
-        //R13 = true
         write("M=-1");
-
-        //jump if true, based on command
-        write("@NEXT");
-        if (command == "eq") write("D;JEQ");
-        if (command == "gt") write("D;JGT");
-        if (command == "lt") write("D;JLT");
-
-        //R13 = false
+        write("@NEXT" + jumpFlag);
+        write(asmOp);
         write("@R13");
         write("M=0");
-        
-        write("(NEXT)");
-        // M[SP] = R13
+        write("(NEXT" + jumpFlag++ + ")");
         write("@R13");
         write("D=M");
         write("@SP");
-        write("A=M");
+        write("A=M-1");
         write("M=D");
-        writeIncrementSP();
-        
     }
 }
