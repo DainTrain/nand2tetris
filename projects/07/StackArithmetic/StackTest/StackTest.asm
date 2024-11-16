@@ -16,17 +16,12 @@ M=D
 M=M+1
 // eq
 @SP
-M=M-1
-A=M
-D=M
-@R13
-M=D
+AM=M-1
+D-M
 @SP
-M=M-1
-A=M
-D=M
+A=M-1
+D=M-D
 @R13
-D=D-M
 M=-1
 @NEXT0
 D;JEQ
@@ -36,10 +31,8 @@ M=0
 @R13
 D=M
 @SP
-A=M
+A=M-1
 M=D
-@SP
-M=M+1
 // push constant 17
 @17
 D=A
@@ -58,17 +51,12 @@ M=D
 M=M+1
 // eq
 @SP
-M=M-1
-A=M
-D=M
-@R13
-M=D
+AM=M-1
+D-M
 @SP
-M=M-1
-A=M
-D=M
+A=M-1
+D=M-D
 @R13
-D=D-M
 M=-1
 @NEXT1
 D;JEQ
@@ -78,10 +66,8 @@ M=0
 @R13
 D=M
 @SP
-A=M
+A=M-1
 M=D
-@SP
-M=M+1
 // push constant 16
 @16
 D=A
@@ -100,17 +86,12 @@ M=D
 M=M+1
 // eq
 @SP
-M=M-1
-A=M
-D=M
-@R13
-M=D
+AM=M-1
+D-M
 @SP
-M=M-1
-A=M
-D=M
+A=M-1
+D=M-D
 @R13
-D=D-M
 M=-1
 @NEXT2
 D;JEQ
@@ -120,10 +101,8 @@ M=0
 @R13
 D=M
 @SP
-A=M
+A=M-1
 M=D
-@SP
-M=M+1
 // push constant 892
 @892
 D=A
@@ -142,17 +121,12 @@ M=D
 M=M+1
 // lt
 @SP
-M=M-1
-A=M
-D=M
-@R13
-M=D
+AM=M-1
+D-M
 @SP
-M=M-1
-A=M
-D=M
+A=M-1
+D=M-D
 @R13
-D=D-M
 M=-1
 @NEXT3
 D;JLT
@@ -162,10 +136,8 @@ M=0
 @R13
 D=M
 @SP
-A=M
+A=M-1
 M=D
-@SP
-M=M+1
 // push constant 891
 @891
 D=A
@@ -184,17 +156,12 @@ M=D
 M=M+1
 // lt
 @SP
-M=M-1
-A=M
-D=M
-@R13
-M=D
+AM=M-1
+D-M
 @SP
-M=M-1
-A=M
-D=M
+A=M-1
+D=M-D
 @R13
-D=D-M
 M=-1
 @NEXT4
 D;JLT
@@ -204,10 +171,8 @@ M=0
 @R13
 D=M
 @SP
-A=M
+A=M-1
 M=D
-@SP
-M=M+1
 // push constant 891
 @891
 D=A
@@ -226,17 +191,12 @@ M=D
 M=M+1
 // lt
 @SP
-M=M-1
-A=M
-D=M
-@R13
-M=D
+AM=M-1
+D-M
 @SP
-M=M-1
-A=M
-D=M
+A=M-1
+D=M-D
 @R13
-D=D-M
 M=-1
 @NEXT5
 D;JLT
@@ -246,10 +206,8 @@ M=0
 @R13
 D=M
 @SP
-A=M
+A=M-1
 M=D
-@SP
-M=M+1
 // push constant 32767
 @32767
 D=A
@@ -268,17 +226,12 @@ M=D
 M=M+1
 // gt
 @SP
-M=M-1
-A=M
-D=M
-@R13
-M=D
+AM=M-1
+D-M
 @SP
-M=M-1
-A=M
-D=M
+A=M-1
+D=M-D
 @R13
-D=D-M
 M=-1
 @NEXT6
 D;JGT
@@ -288,10 +241,8 @@ M=0
 @R13
 D=M
 @SP
-A=M
+A=M-1
 M=D
-@SP
-M=M+1
 // push constant 32766
 @32766
 D=A
@@ -310,17 +261,12 @@ M=D
 M=M+1
 // gt
 @SP
-M=M-1
-A=M
-D=M
-@R13
-M=D
+AM=M-1
+D-M
 @SP
-M=M-1
-A=M
-D=M
+A=M-1
+D=M-D
 @R13
-D=D-M
 M=-1
 @NEXT7
 D;JGT
@@ -330,10 +276,8 @@ M=0
 @R13
 D=M
 @SP
-A=M
+A=M-1
 M=D
-@SP
-M=M+1
 // push constant 32766
 @32766
 D=A
@@ -352,17 +296,12 @@ M=D
 M=M+1
 // gt
 @SP
-M=M-1
-A=M
-D=M
-@R13
-M=D
+AM=M-1
+D-M
 @SP
-M=M-1
-A=M
-D=M
+A=M-1
+D=M-D
 @R13
-D=D-M
 M=-1
 @NEXT8
 D;JGT
@@ -372,10 +311,8 @@ M=0
 @R13
 D=M
 @SP
-A=M
+A=M-1
 M=D
-@SP
-M=M+1
 // push constant 57
 @57
 D=A
@@ -402,15 +339,11 @@ M=D
 M=M+1
 // add
 @SP
-M=M-1
-A=M
+AM=M-1
 D=M
 @SP
-M=M-1
-A=M
-M=D+M
-@SP
-M=M+1
+A=M-1
+M=M+D
 // push constant 112
 @112
 D=A
@@ -421,27 +354,22 @@ M=D
 M=M+1
 // sub
 @SP
-M=M-1
-A=M
+AM=M-1
 D=M
 @SP
-M=M-1
-A=M
+A=M-1
 M=M-D
-@SP
-M=M+1
 // neg
+@SP
+A=M-1
+M=-M
 // and
 @SP
-M=M-1
-A=M
+AM=M-1
 D=M
 @SP
-M=M-1
-A=M
-M=D&M
-@SP
-M=M+1
+A=M-1
+M=M&D
 // push constant 82
 @82
 D=A
@@ -452,13 +380,12 @@ M=D
 M=M+1
 // or
 @SP
-M=M-1
-A=M
+AM=M-1
 D=M
 @SP
-M=M-1
-A=M
-M=D|M
-@SP
-M=M+1
+A=M-1
+M=M|D
 // not
+@SP
+A=M-1
+M=!M

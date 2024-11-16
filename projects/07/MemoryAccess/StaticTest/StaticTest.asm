@@ -61,15 +61,11 @@ M=D
 M=M+1
 // sub
 @SP
-M=M-1
-A=M
+AM=M-1
 D=M
 @SP
-M=M-1
-A=M
+A=M-1
 M=M-D
-@SP
-M=M+1
 // push static 8
 @null.8
 D=M
@@ -80,12 +76,8 @@ M=D
 M=M+1
 // add
 @SP
-M=M-1
-A=M
+AM=M-1
 D=M
 @SP
-M=M-1
-A=M
-M=D+M
-@SP
-M=M+1
+A=M-1
+M=M+D
