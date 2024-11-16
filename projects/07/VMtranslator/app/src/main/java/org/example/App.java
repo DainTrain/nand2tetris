@@ -26,27 +26,22 @@ public class App {
     public static void main(String[] args) {
         System.out.println(new App().getGreeting());
 
-        String dir = System.getProperty("user.dir");
+        String baseDir = System.getProperty("user.dir");
 
         // list of Parsers for each .vm file
         List<Parser> parsers = new ArrayList<Parser>();
-        // List<File> files = new ArrayList<File>();
 
         if (args.length > 0 && args[0].endsWith(".vm")) {
-            System.out.println(args[0]);
-            // files.add(new File(Path.of(dir, args[0]).toString()));
-            parsers.add(new Parser(new File(Path.of(dir, args[0]).toString())));
+            parsers.add(new Parser(new File(Path.of(baseDir, args[0]).toString())));
         } else {
-            try (Stream<Path> walk = Files.walk(Paths.get(dir))) {
+            try (Stream<Path> walk = Files.walk(Paths.get(baseDir))) {
                 List<String> vmFileNames = walk
                         .filter(p -> !Files.isDirectory(p))
                         .map(p -> p.toString())
                         .filter(f -> f.endsWith("vm"))
                         .collect(Collectors.toList());
                 for (String vmFile : vmFileNames) {
-                    // files.add(new File(Path.of(dir, vmFile).toString()));
                     parsers.add(new Parser(new File(Path.of(vmFile).toString())));
-                    System.out.println(vmFile);
                 }
             } catch (IOException ex) {
                 System.out.println("Exc walking dir for *.vm");
@@ -55,13 +50,13 @@ public class App {
         
         // one CodeWriter
         CodeWriter writer = new CodeWriter();
+        String childDirName = baseDir.substring(System.getProperty("user.dir").lastIndexOf("\\") + 1, baseDir.length());
         // create output .asm file
         String outputFileName = args.length > 0 && args[0].endsWith(".vm") ?
                 System.getProperty("user.dir") + "/" + args[0].split(".vm")[0] :
-                System.getProperty("user.dir").substring(System.getProperty("user.dir").lastIndexOf("/") + 1);
+                baseDir + "/" + childDirName;
 
         try {
-            System.out.println("output: " + outputFileName);
             writer.setFileName(outputFileName);
 
             for (Parser parser : parsers) {
@@ -86,9 +81,10 @@ public class App {
                     }
                 }
             }
-                writer.close();
-            } catch (IOException ex) {
-                System.err.println(ex);
-            }
+            writer.close();
+        } catch (IOException ex) {
+            System.err.println(ex);
+        } finally {
+        }
     }
 }
