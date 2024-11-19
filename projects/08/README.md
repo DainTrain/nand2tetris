@@ -1,0 +1,1 @@
+Project 08 is an extension of project 07. It covers the implemention of the VM function and program control (function, call, return, goto, if-goto, label) commands. These have been added to the source code in project 07's VMtranslator. That project contains an exectuable command that can be added to your PATH to be run on the project 08 VM files.
