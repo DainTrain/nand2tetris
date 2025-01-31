@@ -19,13 +19,8 @@ import java.util.stream.Stream;
 import java.util.ArrayList;
 
 public class App {
-    public String getGreeting() {
-        return "Hello World!";
-    }
 
     public static void main(String[] args) {
-        System.out.println(new App().getGreeting());
-
         String baseDir = System.getProperty("user.dir");
 
         // list of Parsers for each .vm file
