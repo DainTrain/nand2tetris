@@ -143,7 +143,7 @@ M=D
 M=M-1
 A=M
 D=M
-@null.6
+@BasicTest.6
 M=D
 // push local 0
 @0
@@ -236,7 +236,7 @@ A=M
 M=D
 @SP
 M=M+1
-@null.6
+@BasicTest.6
 D=M
 @SP
 A=M

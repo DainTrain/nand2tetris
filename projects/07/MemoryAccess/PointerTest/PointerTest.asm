@@ -10,7 +10,7 @@ M=M+1
 @SP
 AM=M-1
 D=M
-@3
+@THIS
 M=D
 // push constant 3040
 @3040
@@ -24,7 +24,7 @@ M=M+1
 @SP
 AM=M-1
 D=M
-@4
+@THAT
 M=D
 // push constant 32
 @32
@@ -69,7 +69,7 @@ D=M
 A=M
 M=D
 // push pointer 0
-@3
+@THIS
 D=M
 @SP
 A=M
@@ -77,7 +77,7 @@ M=D
 @SP
 M=M+1
 // push pointer 1
-@4
+@THAT
 D=M
 @SP
 A=M
