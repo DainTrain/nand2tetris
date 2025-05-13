@@ -58,6 +58,18 @@ public class Parser implements IParser {
             return CommandType.C_PUSH;
         } else if (cc.startsWith("pop")) {
             return CommandType.C_POP;
+        } else if (cc.startsWith("label")) {
+            return CommandType.C_LABEL;
+        } else if (cc.startsWith("goto")) {
+            return CommandType.C_GOTO;
+        } else if (cc.startsWith("if-goto")) {
+            return CommandType.C_IF;
+        } else if (cc.startsWith("function")) {
+            return CommandType.C_FUNCTION;
+        } else if (cc.startsWith("call")) {
+            return CommandType.C_CALL;
+        } else if (cc.startsWith("return")) {
+            return CommandType.C_RETURN;
         }
         return CommandType.C_ARITHMETIC;
     }

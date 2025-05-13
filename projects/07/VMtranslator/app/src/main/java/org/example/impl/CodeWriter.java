@@ -11,9 +11,12 @@ public class CodeWriter implements ICodeWriter {
     private String fileName;
     private BufferedWriter bWriter = null;
     int jumpFlag = 0;
+    int returnCounter = 1;
     private Map<String,String> segmentToSymbolMap = new HashMap<String, String>(){{
         put("local", "LCL"); put("argument", "ARG"); put("this", "THIS"); put("that", "THAT");}};
-
+    private Map<String,String> registerMap = new HashMap<String, String>(){{
+        put("R_LCL", "1"); put("R_FRAME", "13"); put("R_RET", "14"); put("R_COPY", "15");
+    }};
     public CodeWriter() {
 
     }
@@ -21,6 +24,7 @@ public class CodeWriter implements ICodeWriter {
     public void setFileName(String fileName) throws IOException {
         FileWriter fstream = new FileWriter(fileName + ".asm");
         bWriter = new BufferedWriter(fstream);
+        this.fileName = fileName;
     }
 
     private void write(String asmCommand) throws IOException {
@@ -192,6 +196,158 @@ public class CodeWriter implements ICodeWriter {
         write("M=D");
     }
 
+    public void writeInit() throws IOException {
+        write("@256");
+        write("D=A");
+        write("@SP");
+        write("M=D");
+        // call Sys.init 0
+        writeCall("Sys.init", 0);
+    }
+
+    public void writeLabel(String label) throws IOException {
+        write("(" + this.fileName + "." + label + ")");
+    }
+
+    public void writeGoto(String label) throws IOException {
+        write("@" + this.fileName + "." + label);
+        write("0;JMP");
+    }
+
+    public void writeIf(String label) throws IOException {
+        writeDecrementSP();
+        write("@SP");
+        write("A=M");
+        write("D=M");
+        write("@" + this.fileName + "." + label);
+        write("D;JNE");
+    }
+
+    public void writeCall(String fnName, int numArgs) throws IOException {
+        // push return-address
+        write("@return-address" + returnCounter);
+        write("D=A");
+        write("@SP");
+        write("A=M");
+        write("M=D");
+        writeIncrementSP();
+
+        //push LCL
+        write("@LCL");
+        write("D=M");
+        write("@SP");
+        write("A=M");
+        write("M=D");
+        writeIncrementSP();
+
+        // push ARG
+        write("@ARG");
+        write("D=M");
+        write("@SP");
+        write("A=M");
+        write("M=D");
+        writeIncrementSP();
+
+        // push THIS
+        write("@THIS");
+        write("D=M");
+        write("@SP");
+        write("A=M");
+        write("M=D");
+        writeIncrementSP();
+
+        // push THAT
+        write("@THAT");
+        write("D=M");
+        write("@SP");
+        write("A=M");
+        write("M=D");
+        writeIncrementSP();
+
+        // ARG = SP-n-5
+        write("@SP");
+        write("D=M");
+        write("@5");
+        write("D=D-A");
+        write("@" + numArgs);
+        write("D=D-A");
+        write("@ARG");
+        write("M=D");
+
+        //LCL = SP
+        write("@SP");
+        write("D=M");
+        write("@LCL");
+        write("M=D");
+
+        // goto fnName
+        write("@" + fnName);
+        write("0;JMP");
+
+        // last thing is to write return-address label
+        write("(return-address" + returnCounter++ + ")");
+    }
+
+    public void writeReturn() throws IOException {
+        regToReg(registerMap.get("R_FRAME"), registerMap.get("R_LCL"));
+        // write("@LCL");
+        // write("D=M");
+        // write("@R7"); //Frame=R7
+        // write("M=D"); //Frame=LCL
+
+        // RET = *(FRAME - 5)
+        write("@5");
+        write("A=D-A");
+        write("D=M");
+        compToReg(registerMap.get("R_RET"), "D");
+        // write("@R14");
+        // write("M=D");
+
+        write("@SP");
+        write("M=M-1");
+        write("@ARG");
+        write("AD=M");
+
+        // writeIndexedPop("ARG", 0);
+
+        // SP = ARG+1
+        write("@ARG");
+        write("D=M");
+        write("@SP");
+        write("M=D+1");
+
+        writeFrameRestore("THAT", 1);
+        writeFrameRestore("THIS", 2);
+        writeFrameRestore("ARG", 3);
+        writeFrameRestore("LCL", 4);
+
+        write("@R14");
+        write("A=M");
+        write("0;JMP");
+    }
+
+    public void writeFrameRestore(String segment, int offset) throws IOException {
+        write("@R7");
+        write("D=M");
+        write("@" + offset);
+        write("A=D-A");
+        write("D=M");
+        write("@" + segment);
+        write("M=D");
+    }
+
+    public void writeFunction(String fnName, int numLocals) throws IOException {
+        write("(" + fnName + ")");
+        for (int i=0; i < numLocals; i++) {
+            write("@0");
+            write("D=A");
+            write("@SP");
+            write("A=M");
+            write("M=D");
+            writeIncrementSP();
+        }
+    }
+
     public void close() throws IOException {
         bWriter.close();
     }
@@ -234,5 +390,21 @@ public class CodeWriter implements ICodeWriter {
         write("@SP");
         write("A=M-1");
         write("M=D");
+    }
+
+    //https://github.com/havivha/Nand2Tetris/blob/master/08/VMtranslator/CodeWriter.py#L75
+    public void regToDest(String dest, String reg) throws IOException {
+        write("@R" + registerMap.get(reg));
+        write(dest + "=M");
+    }
+
+    public void compToReg(String reg, String comp) throws IOException {
+        write("@R" + registerMap.get(reg));
+        write("M=" + comp);
+    }
+
+    public void regToReg(String dest, String src) throws IOException {
+        regToDest("D", src);
+        compToReg(dest, "D");
     }
 }

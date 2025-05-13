@@ -46,15 +46,20 @@ public class App {
         // one CodeWriter
         CodeWriter writer = new CodeWriter();
         String childDirName = baseDir.substring(System.getProperty("user.dir").lastIndexOf("\\") + 1, baseDir.length());
+        String vmFileName = args.length > 0 && args[0].endsWith(".vm") ?
+                args[0].split(".vm")[0] :
+                childDirName;
         // create output .asm file
         String outputFileName = args.length > 0 && args[0].endsWith(".vm") ?
                 System.getProperty("user.dir") + "/" + args[0].split(".vm")[0] :
                 baseDir + "/" + childDirName;
 
         try {
-            writer.setFileName(outputFileName);
+            writer.setFileName(vmFileName);
+            writer.writeInit();
 
             for (Parser parser : parsers) {
+                writer.setFileName(parser.vmFileName.split(".vm")[0]);
 
                 // try to open its file, and write to writer while there are more commands
                 while (parser.hasMoreCommands()) {
@@ -67,6 +72,24 @@ public class App {
                                 break;
                             case C_ARITHMETIC:
                                 writer.writeArithmetic(cc);
+                                break;
+                            case C_LABEL:
+                                writer.writeLabel(parser.arg1());
+                                break;
+                            case C_GOTO:
+                                writer.writeGoto(parser.arg1());
+                                break;
+                            case C_IF:
+                                writer.writeIf(parser.arg1());
+                                break;
+                            case C_CALL:
+                                writer.writeCall("", 0);
+                                break;
+                            case C_RETURN:
+                                writer.writeReturn();
+                                break;
+                            case C_FUNCTION:
+                                writer.writeFunction(parser.arg1(), parser.arg2());
                                 break;
                             default:
                                 break;
