@@ -1,0 +1,35 @@
+class Main {
+   function void main() {
+
+      var Array a;
+      var int length;
+      var int i;
+      var int smallest, largest;
+      var int input;
+
+      let length = Keyboard.readInt("How mnay numbers? ");
+      let a = Array.new(length);
+
+      let i = 0;
+      while (i < length) {
+        let a[i] = Keyboard.readInt("Enter a number: ");
+        if (a[i] > largest) {
+            let largest = a[i];
+        }
+        if (a[i] < smallest) {
+            let smallest = a[i];
+        }
+        let i = i + 1;
+      }
+      do Output.printString("Do you want the smallest or largest number?");
+      let input = Keyboard.readInt("Enter '0' for smallest. Enter anything else for largest");
+      
+      if (input = 0) {
+        do Output.printInt(smallest);
+      } else {
+        do Output.printInt(largest);
+      }
+
+      return;
+   }
+}
