@@ -110,8 +110,3 @@ for (const jackFile of jackFiles) {
   const engine: CompilationEngine = new CompilationEngine(xmlParsedFile, xmlString);
   engine.compileClass();
 }
-
-// for each jack file
-// new tokenizer
-// create output file
-// use engine to compile input tokenizer into output file

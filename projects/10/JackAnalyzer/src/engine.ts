@@ -1,13 +1,12 @@
-import { readFile } from 'fs/promises';
-import { join, parse } from 'path';
 import { appendFileSync } from 'fs';
 import { type Token, TokenStream } from './util/token-stream.js';
+import { Op } from '../types/grammar.js';
 
 export class CompilationEngine {
     private tokens: TokenStream;
     private xmlFileName: string | undefined = undefined;
     private indentLevel: number = 0;
-    public debug: boolean = false;
+    public debug: boolean = true;
 
     constructor(xmlFileName: string, xmlString: string) {
         this.xmlFileName = xmlFileName;
@@ -30,7 +29,7 @@ export class CompilationEngine {
      * @param expectedValue 
      * @returns 0 if successful validate and write, -1 otherwise
      */
-    private expectAndWrite(expectedTag: string, expectedValue?: string): void {
+    private expectAndWrite(expectedTag: string | string[], expectedValue?: string): void {
         let parsedToken: Token = this.tokens.expect(expectedTag, expectedValue);
         this.write(`<${parsedToken.tag}> ${parsedToken.value} </${parsedToken.tag}>`);
     }
@@ -40,32 +39,19 @@ export class CompilationEngine {
         this.indentLevel++;
 
         this.expectAndWrite('keyword', 'class');
-        this.expectAndWrite('identifier', 'Main');
+        this.expectAndWrite('identifier');
         this.expectAndWrite('symbol', '{');
 
-        let peekedToken: Token | null = this.tokens.peek();
-        let hasClassVarDec, nextStaticOrField = (peekedToken?.tag === 'keyword' && (peekedToken?.value === 'static' || peekedToken?.value === 'field'));
-        if (hasClassVarDec) {
-            this.write('<classVarDec>');
-            this.indentLevel++;
-        }
-        while (nextStaticOrField) {
+        let peekedClassVarToken: Token | null = this.tokens.peek();
+        while (peekedClassVarToken?.tag === 'keyword' && (peekedClassVarToken?.value === 'static' || peekedClassVarToken?.value === 'field')) {
             this.compileClassVarDec();
-            peekedToken = this.tokens.peek();
-            nextStaticOrField = (peekedToken?.tag === 'keyword' && (peekedToken?.value === 'static' || peekedToken?.value === 'field'));
-        }
-        if (hasClassVarDec) {
-            this.indentLevel--;
-            this.write('</classVarDec>');
+            peekedClassVarToken = this.tokens.peek();
         }
 
-        while (peekedToken?.tag === 'keyword' && (peekedToken?.value === 'constructor' || peekedToken?.value === 'function' || peekedToken?.value === 'method')) {
-            this.write('<subroutineDec>');
-            this.indentLevel++;
+        let peekedSubroutineToken = this.tokens.peek();
+        while (peekedSubroutineToken?.tag === 'keyword' && (peekedSubroutineToken?.value === 'constructor' || peekedSubroutineToken?.value === 'function' || peekedSubroutineToken?.value === 'method')) {
             this.compileSubroutine();
-            this.indentLevel--;
-            this.write('</subroutineDec>');
-            peekedToken = this.tokens.peek();
+            peekedSubroutineToken = this.tokens.peek();
         }
 
         this.expectAndWrite('symbol', '}');
@@ -74,21 +60,38 @@ export class CompilationEngine {
     }
 
     compileClassVarDec(): void {
-        let varScopeToken: Token = this.tokens.advance();
-        this.write(`<keyword> ${varScopeToken.value} </keyword>`);
-        varScopeToken = this.tokens.advance();
-        this.write(`<keyword> ${varScopeToken.value} </keyword>`);
+        this.write('<classVarDec>');
+        this.indentLevel++;
+
         this.expectAndWrite('keyword');
+        this.expectAndWrite(['keyword', 'identifier']);
+        this.expectAndWrite('identifier');
+
+        let possibleComma = this.tokens.peek()?.value;
+        while (possibleComma === ',') {
+            this.expectAndWrite('symbol', ',');
+            this.expectAndWrite('identifier');
+            possibleComma = this.tokens.peek()?.value;
+        }
         this.expectAndWrite('symbol', ';');
+
+        this.indentLevel--;
+        this.write('</classVarDec>');
     }
 
     compileSubroutine(): void {
-        let subroutineTokenHead = this.tokens.advance();
-        this.write(`<keyword> ${subroutineTokenHead.value} </keyword>`); // e.g. function
-        subroutineTokenHead = this.tokens.advance();
-        this.write(`<keyword> ${subroutineTokenHead.value} </keyword>`); // e.g. void
-        subroutineTokenHead = this.tokens.advance();
-        this.write(`<identifier> ${subroutineTokenHead.value} </identifier>`); //e.g. main
+        this.write('<subroutineDec>');
+        this.indentLevel++;
+
+        let subroutineIsConstructor = this.tokens.peek()?.value === 'constructor';
+        this.expectAndWrite('keyword'); //e.g. function
+        // if (subroutineIsConstructor) {
+        //     this.expectAndWrite('identifier');
+        // } else {
+
+        // }
+        this.expectAndWrite(['keyword', 'identifier']); // e.g. void
+        this.expectAndWrite('identifier'); // e.g. main
         this.expectAndWrite('symbol', '(');
 
         this.compileParameterList();
@@ -105,24 +108,19 @@ export class CompilationEngine {
 
         this.indentLevel--;
         this.write('</subroutineBody>');
+
+        this.indentLevel--;
+        this.write('</subroutineDec>');
     }
 
     compileParameterList(): void {
         this.write('<parameterList>');
         this.indentLevel++;
 
-        let paramListToken = this.tokens.peek();
-        if (paramListToken?.value !== ')') {
-            this.expectAndWrite('keyword');
+        while (this.tokens.peek()?.value !== ')') {
+            this.expectAndWrite(['keyword', 'identifier']);
             this.expectAndWrite('identifier');
-            paramListToken = this.tokens.peek();
-        }
-        while (paramListToken?.value !== ')') {
-            paramListToken = this.tokens.advance();
-            this.expectAndWrite('symbol', ',');
-            this.expectAndWrite('keyword');
-            this.expectAndWrite('identifier');
-            paramListToken = this.tokens.peek();
+            if (this.tokens.peek()?.value === ',') this.expectAndWrite('symbol', ',');
         }
 
         this.indentLevel--;
@@ -181,7 +179,7 @@ export class CompilationEngine {
             nextStatementToken = this.tokens.peek();
         }
         this.indentLevel--;
-        this.write('</statements');
+        this.write('</statements>');
     }
 
     compileDo(): void {
@@ -213,7 +211,7 @@ export class CompilationEngine {
         if (this.tokens.peek()?.value === '[') {
             this.expectAndWrite('symbol', '[');
             this.compileExpression();
-            this.expectAndWrite(']');
+            this.expectAndWrite('symbol', ']');
         }
         this.expectAndWrite('symbol', '=');
         this.compileExpression();
@@ -271,7 +269,7 @@ export class CompilationEngine {
 
         this.compileStatements();
 
-        this.expectAndWrite('}');
+        this.expectAndWrite('symbol', '}');
         let elseToken = this.tokens.peek();
         if (elseToken?.tag === 'keyword' && elseToken?.value === 'else') {
             this.expectAndWrite('keyword', 'else');
@@ -279,7 +277,7 @@ export class CompilationEngine {
 
             this.compileStatements();
 
-            this.expectAndWrite('}');
+            this.expectAndWrite('symbol', '}');
         }
 
         this.indentLevel--;
@@ -292,11 +290,12 @@ export class CompilationEngine {
 
         this.compileTerm();
 
-        let possibleOp = this.tokens.peek()?.value;
-        while (possibleOp && ['+', '-', '*', '/', '&', '|', '<', '>', '='].includes(possibleOp)) {
+        let possibleOp = this.tokens.peek()?.value as Op;
+        const Ops: Op[] = ['+', '-', '*', '/', '&amp;', '|', '&lt;', '&gt;', '='];
+        while (possibleOp && Ops.includes(possibleOp)) {
             this.expectAndWrite('symbol');
             this.compileTerm();
-            possibleOp = this.tokens.peek()?.value;
+            possibleOp = this.tokens.peek()?.value as Op;
         }
 
         this.indentLevel--;
@@ -310,26 +309,51 @@ export class CompilationEngine {
         let termToken = this.tokens.peek();
         if (termToken === null) {
             throw new Error('expected term token but couldnt find one');
-        } else if (typeof termToken.value === 'number') {
-            this.write(`<integerConstant> ${termToken.value} </integerConstant>`);
-        } else if (termToken.value.startsWith('"')) {
-            this.write(`<stringConstant> ${termToken.value} </stringConstant>`);
+        } else if (termToken.tag === 'integerConstant') {
+            this.expectAndWrite('integerConstant');
+        } else if (termToken.tag === 'stringConstant') {
+            this.expectAndWrite('stringConstant');
         } else if (['true', 'false', 'null', 'this'].includes(termToken.value)) {
             this.write(`<keyword> ${termToken.value} </keyword>`);
-        } else if (termToken.value === '-' || termToken.value === '~') {
-            this.write(`<symbol> ${termToken.value} </symbol`);
+            this.tokens.advance();
+        } else if (termToken.value === '-' || termToken.value === '~') { // unaryOp term
+            this.write(`<symbol> ${termToken.value} </symbol>`);
+            this.tokens.advance();
             this.compileTerm();
-        } else if (termToken.value.startsWith('(')) {
+        } else if (termToken.value.startsWith('(')) { // ( expression )
             this.expectAndWrite('symbol', '(');
             this.compileExpression();
             this.expectAndWrite('symbol', ')');
-        } else if (termToken.value.indexOf('[') !== -1) {
-            this.expectAndWrite('identifier');
-            this.expectAndWrite('symbol', '[');
-            this.compileExpression();
-            this.expectAndWrite('symbol', ']');
         } else {
+            // all of these start with an identifier
             this.expectAndWrite('identifier');
+
+            let possibleExtraStep = this.tokens.peek()?.value;
+            //var(expr), peek is (
+            if (possibleExtraStep === '(') {
+                this.expectAndWrite('symbol', '(');
+                this.compileExpressionList();
+                this.expectAndWrite('symbol', ')');
+            }
+            //class.sub(expr), peek is .
+            //var.sub(expr) peek is .
+            else if (possibleExtraStep === '.') {
+                this.expectAndWrite('symbol', '.');
+                this.expectAndWrite('identifier');
+                this.expectAndWrite('symbol', '(');
+                this.compileExpressionList();
+                this.expectAndWrite('symbol', ')');
+            }
+            //var[expr]
+            else if (possibleExtraStep === '[') {
+                this.expectAndWrite('symbol', '[');
+                this.compileExpression();
+                this.expectAndWrite('symbol', ']');
+            }
+            //var
+            else {
+                // do nothing extra
+            }
         }
 
         this.indentLevel--;
@@ -340,12 +364,14 @@ export class CompilationEngine {
         this.write('<expressionList>');
         this.indentLevel++;
 
-        this.compileExpression();
-        let possibleComma = this.tokens.peek()?.value;
-        while (possibleComma === ',') {
-            this.expectAndWrite('symbol', ',');
+        while (this.tokens.peek()?.value !== ')') {
             this.compileExpression();
-            possibleComma = this.tokens.peek()?.value;
+            let possibleComma = this.tokens.peek()?.value;
+            while (possibleComma === ',') {
+                this.expectAndWrite('symbol', ',');
+                this.compileExpression();
+                possibleComma = this.tokens.peek()?.value;
+            }
         }
 
         this.indentLevel--;

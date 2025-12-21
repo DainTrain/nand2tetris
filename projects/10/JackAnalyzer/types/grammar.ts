@@ -50,6 +50,6 @@ export type ReturnStatement = 'return';
 export type Expression = Term | `${Term}${Op}${Term}`;
 export type Term = number | `"${string}"` | KeywordConstant | `${KeywordConstant}[expression]`;
 
-export type Op = '+' | '-' | '*' | '/' | '&' | '|' | '<' | '>' | '=';
+export type Op = '+' | '-' | '*' | '/' | '&amp;' | '|' | '&lt;' | '&gt;' | '=';
 export type UnaryOp = '-' | '~';
 export type KeywordConstant = 'true' | 'false' | 'null' | 'this';

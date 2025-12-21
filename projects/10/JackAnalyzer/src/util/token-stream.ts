@@ -36,10 +36,16 @@ export class TokenStream {
         return this.tokens[this.position++];
     }
 
-    expect(expectedTag: string, expectedValue?: string): Token {
+    expect(expectedTag: string | string[], expectedValue?: string): Token {
         const token = this.advance();
-        if (token.tag !== expectedTag || (expectedValue && token.value !== expectedValue)) {
-            throw new Error(`Expected <${expectedTag}> ${expectedValue ?? ""}, got <${token.tag}> ${token.value}`);
+        if (Array.isArray(expectedTag)) {
+            if (!(expectedTag.includes(token.tag) || (expectedValue && token.value !== expectedValue))) {
+                throw new Error(`Expected tag to be in an array, got <${token.tag}> ${token.value}`);
+            }
+        } else {
+            if (token.tag !== expectedTag || (expectedValue && token.value !== expectedValue)) {
+                throw new Error(`Expected <${expectedTag}> ${expectedValue ?? ""}, got <${token.tag}> ${token.value}`);
+            }
         }
         return token;
     }
