@@ -1,0 +1,18 @@
+{
+    "include": [
+        "src/**/*",
+        "types/**/*"
+    ],
+    "compilerOptions": {
+        "declaration": true,
+        "declarationMap": true,
+        "esModuleInterop": true,
+        "outDir": "dist",
+        "target": "ES2022",
+        "module": "ES2022",
+        "moduleResolution": "bundler",
+        "resolveJsonModule": true,
+        "skipLibCheck": true,
+        "strict": true
+    }
+}
