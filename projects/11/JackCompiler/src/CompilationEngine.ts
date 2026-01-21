@@ -1,16 +1,19 @@
 import { appendFileSync } from 'fs';
-import { type Token, TokenStream } from './util/token-stream.js';
+import { type Token, TokenStream } from './TokenStream.js';
 import { Op } from '../types/grammar.js';
+import { JackSymbol, SymbolKind, SymbolTable } from './SymbolTable.js';
 
 export class CompilationEngine {
     private tokens: TokenStream;
     private xmlFileName: string | undefined = undefined;
     private indentLevel: number = 0;
     public debug: boolean = true;
+    private symbolTable: SymbolTable;
 
     constructor(xmlFileName: string, xmlString: string) {
         this.xmlFileName = xmlFileName;
         this.tokens = new TokenStream(xmlString);
+        this.symbolTable = new SymbolTable();
     }
 
     log(message: string, ...rest: (string | number | undefined)[]) {
@@ -63,14 +66,25 @@ export class CompilationEngine {
         this.write('<classVarDec>');
         this.indentLevel++;
 
+        const classVarKind = this.tokens.peek()?.value as SymbolKind;
         this.expectAndWrite('keyword');
+        const classVarType = this.tokens.peek()?.value || '';
         this.expectAndWrite(['keyword', 'identifier']);
-        this.expectAndWrite('identifier');
+
+        let parsedToken = this.tokens.expect('identifier');
+        let classVarName = parsedToken.value;
+        this.symbolTable.define({ name: classVarName, type: classVarType, kind: classVarKind });
+        this.write(`<define ${classVarName}: ${classVarKind} ${classVarType} ${this.symbolTable.indexOf(classVarName)}>`);
 
         let possibleComma = this.tokens.peek()?.value;
         while (possibleComma === ',') {
             this.expectAndWrite('symbol', ',');
-            this.expectAndWrite('identifier');
+
+            parsedToken = this.tokens.expect('identifier');
+            classVarName = parsedToken.value;
+            this.symbolTable.define({ name: parsedToken.value, type: classVarType, kind: classVarKind })
+            this.write(`<define ${classVarName}: ${classVarKind} ${classVarType} ${this.symbolTable.indexOf(classVarName)}>`);
+
             possibleComma = this.tokens.peek()?.value;
         }
         this.expectAndWrite('symbol', ';');
@@ -83,13 +97,15 @@ export class CompilationEngine {
         this.write('<subroutineDec>');
         this.indentLevel++;
 
-        let subroutineIsConstructor = this.tokens.peek()?.value === 'constructor';
-        this.expectAndWrite('keyword'); //e.g. function
-        // if (subroutineIsConstructor) {
-        //     this.expectAndWrite('identifier');
-        // } else {
+        this.symbolTable.startSubroutine();
 
-        // }
+        let subroutineIsMethod = this.tokens.peek()?.value === 'method';
+        // if method then the first argument symbol is always this.
+        // The caller will put it on the stack but compiler needs to define symbol here for the callee
+        if (subroutineIsMethod) {
+            this.symbolTable.define({ name: 'this', type: this.xmlFileName!, kind: 'argument' });
+        }
+        this.expectAndWrite('keyword'); //e.g. function
         this.expectAndWrite(['keyword', 'identifier']); // e.g. void
         this.expectAndWrite('identifier'); // e.g. main
         this.expectAndWrite('symbol', '(');
@@ -118,8 +134,14 @@ export class CompilationEngine {
         this.indentLevel++;
 
         while (this.tokens.peek()?.value !== ')') {
-            this.expectAndWrite(['keyword', 'identifier']);
-            this.expectAndWrite('identifier');
+            let argToken = this.tokens.expect(['keyword', 'identifier']);
+            const argType = argToken.value;
+            argToken = this.tokens.expect('identifier');
+            const argName = argToken.value;
+
+            this.symbolTable.define({ name: argName, type: argType, kind: 'argument' })
+            this.write(`<define ${argName}: argument ${argType} ${this.symbolTable.indexOf(argName)}>`);
+
             if (this.tokens.peek()?.value === ',') this.expectAndWrite('symbol', ',');
         }
 
@@ -133,16 +155,22 @@ export class CompilationEngine {
             this.indentLevel++;
 
             this.expectAndWrite('keyword', 'var');
-            const typeToken = this.tokens.peek()?.value;
-            if (['int', 'char', 'boolean'].includes(typeToken!)) {
-                this.expectAndWrite('keyword');
-            } else {
-                this.expectAndWrite('identifier');
-            }
-            this.expectAndWrite('identifier');
+
+            let varToken = this.tokens.expect(['keyword', 'identifier']);
+            const varType = varToken.value;
+            varToken = this.tokens.expect('identifier');
+            let varName = varToken.value;
+
+            this.symbolTable.define({ name: varName, type: varType, kind: 'var' });
+            this.write(`<define ${varName}: var ${varType} ${this.symbolTable.indexOf(varName)}>`);
+
             while (this.tokens.peek()?.tag === 'symbol' && this.tokens.peek()?.value === ',') {
                 this.expectAndWrite('symbol', ',');
-                this.expectAndWrite('identifier');
+
+                varToken = this.tokens.expect('identifier');
+                varName = varToken.value;
+                this.symbolTable.define({ name: varToken.value, type: varType, kind: 'var' });
+                this.write(`<define ${varName}: var ${varType} ${this.symbolTable.indexOf(varName)}>`);
             }
             this.expectAndWrite('symbol', ';');
 
@@ -188,6 +216,7 @@ export class CompilationEngine {
 
         this.expectAndWrite('keyword', 'do');
         this.expectAndWrite('identifier');
+
         if (this.tokens.peek()?.tag === 'symbol' && this.tokens.peek()?.value === '.') {
             this.expectAndWrite('symbol', '.');
             this.expectAndWrite('identifier');
@@ -207,7 +236,11 @@ export class CompilationEngine {
         this.indentLevel++;
 
         this.expectAndWrite('keyword', 'let');
-        this.expectAndWrite('identifier');
+
+        let letSymbolToken = this.tokens.expect('identifier');
+        const letSymbolName = letSymbolToken.value;
+
+        this.write(`<use ${letSymbolName}: ${this.symbolTable.kindOf(letSymbolName)} ${this.symbolTable.typeOf(letSymbolName)} ${this.symbolTable.indexOf(letSymbolName)}>`);
         if (this.tokens.peek()?.value === '[') {
             this.expectAndWrite('symbol', '[');
             this.compileExpression();
@@ -326,7 +359,10 @@ export class CompilationEngine {
             this.expectAndWrite('symbol', ')');
         } else {
             // all of these start with an identifier
-            this.expectAndWrite('identifier');
+            let termToken = this.tokens.expect('identifier');
+            const termTokenName = termToken.value;
+
+            this.write(`<use ${termTokenName}: ${this.symbolTable.kindOf(termTokenName)} ${this.symbolTable.typeOf(termTokenName)} ${this.symbolTable.indexOf(termTokenName)}>`);
 
             let possibleExtraStep = this.tokens.peek()?.value;
             //var(expr), peek is (
@@ -339,7 +375,10 @@ export class CompilationEngine {
             //var.sub(expr) peek is .
             else if (possibleExtraStep === '.') {
                 this.expectAndWrite('symbol', '.');
-                this.expectAndWrite('identifier');
+                let termSubToken = this.tokens.expect('identifier');
+                const termSubTokenName = termSubToken.value;
+
+                this.write(`<use ${termSubTokenName}: ${this.symbolTable.kindOf(termSubTokenName)} ${this.symbolTable.typeOf(termSubTokenName)} ${this.symbolTable.indexOf(termSubTokenName)}>`);
                 this.expectAndWrite('symbol', '(');
                 this.compileExpressionList();
                 this.expectAndWrite('symbol', ')');

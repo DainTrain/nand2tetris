@@ -1,10 +1,10 @@
 import { Keyword, assertIdentifierValue, TokenType } from '../types/grammar.js';
-import { JackTokenizer } from './tokenizer.js';
+import { JackTokenizer } from './JackTokenizer.js';
 import { appendFileSync, mkdirSync, readdirSync, rmSync, writeFileSync, readFileSync } from 'fs';
 import { join, extname } from 'path';
 import minimist, { ParsedArgs } from 'minimist';
-import { CompilationEngine } from './engine.js';
-console.log('Running Jack Analyzer...');
+import { CompilationEngine } from './CompilationEngine.js';
+console.log('Running Jack Compiler...');
 const args: ParsedArgs = minimist(process.argv.slice(2), {
   alias: {
     d: 'debug',
@@ -14,7 +14,7 @@ const args: ParsedArgs = minimist(process.argv.slice(2), {
 
 if (args.help) {
   console.log(`
-    Parses .jack files
+    Compiles .jack files into .vm files
     
     -d, --debug     Logs debug info
     -h, --help      Prints this usage`);
@@ -106,7 +106,7 @@ for (const jackFile of jackFiles) {
   appendFileSync(`bin/${xmlTokenFile}`, '</tokens>', 'utf-8');
 
   const xmlParsedFile = `${jackFile.split('.jack')[0]}.xml`;
-  const xmlString = readFileSync(xmlTokenFile, 'utf8');
+  const xmlString = readFileSync(`bin/${xmlTokenFile}`, 'utf8');
   const engine: CompilationEngine = new CompilationEngine(xmlParsedFile, xmlString);
   engine.compileClass();
 }

@@ -7,7 +7,7 @@
     "test": "vitest",
     "build": "tsc",
     "clean": "rm -rf dist",
-    "ja": "node dist/src/index.js",
+    "jc": "node dist/src/JackCompiler.js",
     "eslint": "eslint"
   },
   "author": "",
