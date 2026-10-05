@@ -13,6 +13,9 @@
         "moduleResolution": "bundler",
         "resolveJsonModule": true,
         "skipLibCheck": true,
-        "strict": true
+        "strict": true,
+        "types": [
+            "node"
+        ]
     }
 }

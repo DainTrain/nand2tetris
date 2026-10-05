@@ -2,6 +2,7 @@ import { appendFileSync } from 'fs';
 import { type Token, TokenStream } from './TokenStream.js';
 import { Op } from '../types/grammar.js';
 import { JackSymbol, SymbolKind, SymbolTable } from './SymbolTable.js';
+import { VMWriter } from './VMWriter.js';
 
 export class CompilationEngine {
     private tokens: TokenStream;
@@ -9,11 +10,13 @@ export class CompilationEngine {
     private indentLevel: number = 0;
     public debug: boolean = true;
     private symbolTable: SymbolTable;
+    private vmWriter: VMWriter;
 
     constructor(xmlFileName: string, xmlString: string) {
         this.xmlFileName = xmlFileName;
         this.tokens = new TokenStream(xmlString);
         this.symbolTable = new SymbolTable();
+        this.vmWriter = new VMWriter(`${xmlFileName.split('.xml')[0]}`);
     }
 
     log(message: string, ...rest: (string | number | undefined)[]) {
@@ -107,8 +110,11 @@ export class CompilationEngine {
         }
         this.expectAndWrite('keyword'); //e.g. function
         this.expectAndWrite(['keyword', 'identifier']); // e.g. void
-        this.expectAndWrite('identifier'); // e.g. main
+        // this.expectAndWrite('identifier'); // e.g. main
+        let parsedToken = this.tokens.expect('identifier');
+        this.vmWriter.writeFunction(parsedToken.value, this.symbolTable.varCount('var'));
         this.expectAndWrite('symbol', '(');
+
 
         this.compileParameterList();
 
@@ -215,11 +221,14 @@ export class CompilationEngine {
         this.indentLevel++;
 
         this.expectAndWrite('keyword', 'do');
-        this.expectAndWrite('identifier');
+        let parsedFirst = this.tokens.expect('identifier');
+        // this.expectAndWrite('identifier');
 
         if (this.tokens.peek()?.tag === 'symbol' && this.tokens.peek()?.value === '.') {
             this.expectAndWrite('symbol', '.');
-            this.expectAndWrite('identifier');
+            let parsedSecond = this.tokens.expect('identifier');
+            // this.expectAndWrite('identifier');
+            this.vmWriter.writeCall(`${parsedFirst.value}.${parsedSecond.value}`, 1);
         }
         this.expectAndWrite('symbol', '(');
         this.compileExpressionList();
@@ -283,6 +292,7 @@ export class CompilationEngine {
             this.compileExpression();
         }
         this.expectAndWrite('symbol', ';');
+        this.vmWriter.writeReturn();
 
         this.indentLevel--;
         this.write('</returnStatement>');
@@ -328,6 +338,7 @@ export class CompilationEngine {
         while (possibleOp && Ops.includes(possibleOp)) {
             this.expectAndWrite('symbol');
             this.compileTerm();
+            this.vmWriter.writeArithmetic(possibleOp);
             possibleOp = this.tokens.peek()?.value as Op;
         }
 
@@ -343,6 +354,7 @@ export class CompilationEngine {
         if (termToken === null) {
             throw new Error('expected term token but couldnt find one');
         } else if (termToken.tag === 'integerConstant') {
+            this.vmWriter.write(`push constant ${termToken.value}`);
             this.expectAndWrite('integerConstant');
         } else if (termToken.tag === 'stringConstant') {
             this.expectAndWrite('stringConstant');
