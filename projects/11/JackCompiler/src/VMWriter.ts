@@ -1,19 +1,11 @@
 import { appendFileSync } from 'fs';
-// import { type Token, TokenStream } from './TokenStream.js';
-// import { Op } from '../types/grammar.js';
-// import { JackSymbol, SymbolKind, SymbolTable } from './SymbolTable.js';
 
 export class VMWriter {
-    // private tokens: TokenStream;
     private vmFileName: string | undefined = undefined;
-    // private indentLevel: number = 0;
     public debug: boolean = true;
-    // private symbolTable: SymbolTable;
 
     constructor(vmFileName: string) {
         this.vmFileName = vmFileName;
-        // this.tokens = new TokenStream(xmlString);
-        // this.symbolTable = new SymbolTable();
     }
 
     log(message: string, ...rest: (string | number | undefined)[]) {
@@ -35,12 +27,28 @@ export class VMWriter {
     }
 
     writeArithmetic(command: string) {
-        if (command == '+') {
-            this.write('add');
+        switch (command) {
+            case '+':
+                this.write('add');
+                break;
+            case '*':
+                this.write('call Math.mult 2');
+                break;
+            default:
+                break;
+
         }
-        if (command == '*') {
-            this.write('call Math.mult 2');
-        }
+    }
+
+    writeLabel(label: string) {
+        this.write(`(${label})`);
+    }
+
+    writeGoto(label: string) {
+    }
+
+    writeIf(label: string) {
+
     }
 
     writeCall(name: string, nArgs: number) {
