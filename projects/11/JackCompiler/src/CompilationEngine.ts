@@ -222,16 +222,16 @@ export class CompilationEngine {
 
         this.expectAndWrite('keyword', 'do');
         let parsedFirst = this.tokens.expect('identifier');
-        // this.expectAndWrite('identifier');
+        let vmFunctionName = parsedFirst.value;
 
         if (this.tokens.peek()?.tag === 'symbol' && this.tokens.peek()?.value === '.') {
             this.expectAndWrite('symbol', '.');
             let parsedSecond = this.tokens.expect('identifier');
-            // this.expectAndWrite('identifier');
-            this.vmWriter.writeCall(`${parsedFirst.value}.${parsedSecond.value}`, 1);
+            vmFunctionName += `.${parsedSecond.value}`;
         }
         this.expectAndWrite('symbol', '(');
-        this.compileExpressionList();
+        let numExpr = this.compileExpressionList();
+        this.vmWriter.writeCall(vmFunctionName, numExpr);
         this.expectAndWrite('symbol', ')');
 
         this.expectAndWrite('symbol', ';');
@@ -411,11 +411,13 @@ export class CompilationEngine {
         this.write('</term>');
     }
 
-    compileExpressionList(): void {
+    compileExpressionList(): number {
+        let numExpr = 0;
         this.write('<expressionList>');
         this.indentLevel++;
 
         while (this.tokens.peek()?.value !== ')') {
+            numExpr++;
             this.compileExpression();
             let possibleComma = this.tokens.peek()?.value;
             while (possibleComma === ',') {
@@ -427,5 +429,6 @@ export class CompilationEngine {
 
         this.indentLevel--;
         this.write('</expressionList>');
+        return numExpr;
     }
 }
