@@ -32,7 +32,7 @@ export class VMWriter {
                 this.write('add');
                 break;
             case '*':
-                this.write('call Math.mult 2');
+                this.write('call Math.multiply 2');
                 break;
             default:
                 break;
@@ -60,7 +60,7 @@ export class VMWriter {
     }
 
     writeReturn() {
-        this.write('push 0');
+        this.write('push constant 0');
         this.write('return');
     }
 }
