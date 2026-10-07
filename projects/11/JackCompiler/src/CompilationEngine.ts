@@ -8,7 +8,7 @@ export class CompilationEngine {
     private tokens: TokenStream;
     private xmlFileName: string | undefined = undefined;
     private indentLevel: number = 0;
-    public debug: boolean = true;
+    public debug: boolean = false;
     private symbolTable: SymbolTable;
     private vmWriter: VMWriter;
 
@@ -248,6 +248,7 @@ export class CompilationEngine {
 
         let letSymbolToken = this.tokens.expect('identifier');
         const letSymbolName = letSymbolToken.value;
+        let memSegment = this.getMemSegment(this.symbolTable.kindOf(letSymbolName));
 
         this.write(`<use ${letSymbolName}: ${this.symbolTable.kindOf(letSymbolName)} ${this.symbolTable.typeOf(letSymbolName)} ${this.symbolTable.indexOf(letSymbolName)}>`);
         if (this.tokens.peek()?.value === '[') {
@@ -421,6 +422,7 @@ export class CompilationEngine {
             this.compileExpression();
             let possibleComma = this.tokens.peek()?.value;
             while (possibleComma === ',') {
+                numExpr++;
                 this.expectAndWrite('symbol', ',');
                 this.compileExpression();
                 possibleComma = this.tokens.peek()?.value;
@@ -430,5 +432,25 @@ export class CompilationEngine {
         this.indentLevel--;
         this.write('</expressionList>');
         return numExpr;
+    }
+
+    private getMemSegment(symbolKind: SymbolKind | 'none'): string {
+        switch (symbolKind) {
+            case "argument":
+                return "arg";
+                break;
+            case "field":
+                return "";
+                break;
+            case "static":
+                return "static";
+                break;
+            case "var":
+                return "local";
+                break;
+            default:
+                return '';
+                break;
+        }
     }
 }
