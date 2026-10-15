@@ -35,6 +35,7 @@ export class VMWriter {
                 this.write('call Math.multiply 2');
                 break;
             default:
+                this.write(command);
                 break;
 
         }

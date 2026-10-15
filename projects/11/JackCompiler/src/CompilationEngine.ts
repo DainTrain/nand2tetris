@@ -366,6 +366,21 @@ export class CompilationEngine {
             this.expectAndWrite('stringConstant');
         } else if (['true', 'false', 'null', 'this'].includes(termToken.value)) {
             this.write(`<keyword> ${termToken.value} </keyword>`);
+            switch (termToken.value) {
+                case 'true':
+                    this.vmWriter.writePush('constant', 1);
+                    this.vmWriter.writeArithmetic('neg');
+                    break;
+                case 'false':
+                case 'null':
+                    this.vmWriter.writePush('constant', 0);
+                    break;
+                case 'this':
+                    this.vmWriter.writePush('pointer', 0);
+                    break;
+                default:
+                    break;
+            }
             this.tokens.advance();
         } else if (termToken.value === '-' || termToken.value === '~') { // unaryOp term
             this.write(`<symbol> ${termToken.value} </symbol>`);
