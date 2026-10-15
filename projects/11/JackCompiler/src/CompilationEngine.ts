@@ -249,6 +249,7 @@ export class CompilationEngine {
         let letSymbolToken = this.tokens.expect('identifier');
         const letSymbolName = letSymbolToken.value;
         let memSegment = this.getMemSegment(this.symbolTable.kindOf(letSymbolName));
+        let symbolIndex = this.symbolTable.indexOf(letSymbolName);
 
         this.write(`<use ${letSymbolName}: ${this.symbolTable.kindOf(letSymbolName)} ${this.symbolTable.typeOf(letSymbolName)} ${this.symbolTable.indexOf(letSymbolName)}>`);
         if (this.tokens.peek()?.value === '[') {
@@ -259,6 +260,7 @@ export class CompilationEngine {
         this.expectAndWrite('symbol', '=');
         this.compileExpression();
         this.expectAndWrite('symbol', ';');
+        this.vmWriter.writePop(memSegment, symbolIndex);
 
         this.indentLevel--;
         this.write('</letStatement>');
@@ -381,8 +383,9 @@ export class CompilationEngine {
             //var(expr), peek is (
             if (possibleExtraStep === '(') {
                 this.expectAndWrite('symbol', '(');
-                this.compileExpressionList();
+                let nArgs = this.compileExpressionList();
                 this.expectAndWrite('symbol', ')');
+                this.vmWriter.writeCall(`${termTokenName}`, nArgs);
             }
             //class.sub(expr), peek is .
             //var.sub(expr) peek is .
@@ -393,8 +396,9 @@ export class CompilationEngine {
 
                 this.write(`<use ${termSubTokenName}: ${this.symbolTable.kindOf(termSubTokenName)} ${this.symbolTable.typeOf(termSubTokenName)} ${this.symbolTable.indexOf(termSubTokenName)}>`);
                 this.expectAndWrite('symbol', '(');
-                this.compileExpressionList();
+                let nArgs = this.compileExpressionList();
                 this.expectAndWrite('symbol', ')');
+                this.vmWriter.writeCall(`${termTokenName}.${termSubTokenName}`, nArgs);
             }
             //var[expr]
             else if (possibleExtraStep === '[') {
