@@ -112,11 +112,11 @@ export class CompilationEngine {
         this.expectAndWrite(['keyword', 'identifier']); // e.g. void
         // this.expectAndWrite('identifier'); // e.g. main
         let parsedToken = this.tokens.expect('identifier');
-        this.vmWriter.writeFunction(parsedToken.value, this.symbolTable.varCount('var'));
         this.expectAndWrite('symbol', '(');
 
 
-        this.compileParameterList();
+        let nParams = this.compileParameterList();
+        this.vmWriter.writeFunction(parsedToken.value, nParams);
 
         this.expectAndWrite('symbol', ')');
 
@@ -135,11 +135,13 @@ export class CompilationEngine {
         this.write('</subroutineDec>');
     }
 
-    compileParameterList(): void {
+    compileParameterList(): number {
+        let numParams = 0;
         this.write('<parameterList>');
         this.indentLevel++;
 
         while (this.tokens.peek()?.value !== ')') {
+            numParams++;
             let argToken = this.tokens.expect(['keyword', 'identifier']);
             const argType = argToken.value;
             argToken = this.tokens.expect('identifier');
@@ -153,6 +155,7 @@ export class CompilationEngine {
 
         this.indentLevel--;
         this.write('</parameterList>');
+        return numParams;
     }
 
     compileVarDec(): void {
