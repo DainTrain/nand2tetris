@@ -438,19 +438,14 @@ export class CompilationEngine {
         switch (symbolKind) {
             case "argument":
                 return "arg";
-                break;
             case "field":
                 return "";
-                break;
             case "static":
                 return "static";
-                break;
             case "var":
                 return "local";
-                break;
             default:
                 return '';
-                break;
         }
     }
 }
