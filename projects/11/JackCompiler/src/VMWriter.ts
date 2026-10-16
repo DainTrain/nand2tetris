@@ -34,6 +34,12 @@ export class VMWriter {
             case '*':
                 this.write('call Math.multiply 2');
                 break;
+            case '&gt;':
+                this.write('gt');
+                break;
+            case '&lt;':
+                this.write('lt');
+                break;
             default:
                 this.write(command);
                 break;

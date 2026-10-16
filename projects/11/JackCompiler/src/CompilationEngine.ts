@@ -404,6 +404,7 @@ export class CompilationEngine {
             this.write(`<symbol> ${termToken.value} </symbol>`);
             this.tokens.advance();
             this.compileTerm();
+            this.vmWriter.write('neg');
         } else if (termToken.value.startsWith('(')) { // ( expression )
             this.expectAndWrite('symbol', '(');
             this.compileExpression();
