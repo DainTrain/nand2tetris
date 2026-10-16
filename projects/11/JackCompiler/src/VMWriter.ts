@@ -42,14 +42,15 @@ export class VMWriter {
     }
 
     writeLabel(label: string) {
-        this.write(`(${label})`);
+        this.write(`label ${label}`);
     }
 
     writeGoto(label: string) {
+        this.write(`goto ${label}`);
     }
 
     writeIf(label: string) {
-
+        this.write(`if-goto ${label}`);
     }
 
     writeCall(name: string, nArgs: number) {

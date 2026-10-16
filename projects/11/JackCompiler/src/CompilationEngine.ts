@@ -11,6 +11,7 @@ export class CompilationEngine {
     public debug: boolean = false;
     private symbolTable: SymbolTable;
     private vmWriter: VMWriter;
+    private labelCounter: number = 0;
 
     constructor(xmlFileName: string, xmlString: string) {
         this.xmlFileName = xmlFileName;
@@ -276,14 +277,30 @@ export class CompilationEngine {
         this.expectAndWrite('keyword', 'while');
         this.expectAndWrite('symbol', '(');
 
-        this.compileExpression();
+        this.vmWriter.writeLabel(`WHILE_EXP${this.labelCounter}`);
+
+        let cond = this.compileExpression();
+        //['+', '-', '*', '/', '&amp;', '|', '&lt;', '&gt;', '='];
+        switch (cond) {
+            case '+':
+                break;
+            default:
+                this.vmWriter.writeArithmetic('neg');
+                break;
+        }
+        this.vmWriter.writeIf(`WHILE_END${this.labelCounter}`);
 
         this.expectAndWrite('symbol', ')');
         this.expectAndWrite('symbol', '{');
 
         this.compileStatements();
 
+        this.vmWriter.writeGoto(`WHILE_EXP${this.labelCounter}`);
+
         this.expectAndWrite('symbol', '}');
+
+        this.vmWriter.writeLabel(`WHILE_END${this.labelCounter++}`);
+
 
         this.indentLevel--;
         this.write('</whileStatement>');
@@ -333,7 +350,7 @@ export class CompilationEngine {
         this.write('</ifStatement>');
     }
 
-    compileExpression(): void {
+    compileExpression(): string {
         this.write('<expression>');
         this.indentLevel++;
 
@@ -350,6 +367,7 @@ export class CompilationEngine {
 
         this.indentLevel--;
         this.write('</expression>');
+        return possibleOp;
     }
 
     compileTerm(): void {
@@ -426,7 +444,7 @@ export class CompilationEngine {
             }
             //var
             else {
-                // do nothing extra
+                this.vmWriter.writePush(this.getMemSegment(this.symbolTable.kindOf(termTokenName)), this.symbolTable.indexOf(termTokenName));
             }
         }
 
